@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Journey Maps</title>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<style type="text/css">
+	.feature {
+		fill: none;
+		stroke: grey;
+		stroke-width: 1px;
+  		stroke-linejoin: round;
+	}
+	.mesh {
+		fill: none;
+  		stroke: lightgrey;
+  		stroke-width: 2px;
+  		stroke-linejoin: round;
+	}
+	h1 {
+		font-family: sans-serif;
+	}
+	text {
+	  pointer-events: none;
+	  text-anchor: middle;
+	  font: 12px sans-serif;
+	  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+	}
+</style>
+</head>
+<body>
+	<h1>Journey map</h1>
+	<button class="map">Map</button>
+	<button class="timeline">Time Line</button>
+
+<script type="text/javascript">
+
+var width = 1200,
+    height = 800;
+
+// set projection
+var projection = d3.geo.mercator()
+			.scale(350)
+			.center([60, 37.5]);
+
+// create path variable
+var path = d3.geo.path()
+    .projection(projection);
+
+
+
+var svg = d3.select("body").append("svg")
+    				.attr("width", width)
+    				.attr("height", height);
+
+function draw_map(topo){
+
+	svg.append("path")
+			.datum(topo)
+			.attr("d", path);
+};
+
+function draw_journey(locations){
+	var circles = svg.selectAll("circle")
+	.data(locations).enter()
+	.append("circle")
+
+	//svg.selectAll("circle")
+	// .transition()
+	// .duration(2000)
+	svg.selectAll("circle")
+	.transition()
+	.duration(2000)
+	.attr("cx", function (d) {
+								return projection([d['longitude'],d['latitude']])[0]; })
+	.attr("cy", function (d) {
+								return projection([d['longitude'],d['latitude']])[1]; })
+	.attr("r", "2px")
+	.attr("fill", function(d){
+								return d.color});
+};
+
+
+function draw_timeline(locations){
+	var min_time = d3.min(locations, function(d) { return d.timestampMs; });
+	var max_time = d3.max(locations, function(d) { return d.timestampMs; });
+
+	var timeScale = d3.time.scale()
+									.domain([min_time,max_time])
+									.range([0,width])
+
+	var circles = svg.selectAll("circle")
+	.data(locations).enter()
+	.append("circle")
+
+	svg.selectAll("circle")
+	.transition()
+	.duration(2000)
+	.attr("cx", function (d){
+								return timeScale(d.timestampMs); })
+	.attr("cy", function (d){return 10;})
+	.attr("r", "5px")
+	.attr("fill", function(d){return d.color;});
+};
+
+var data = [];
+
+d3.json("{{url_for('static', filename='map.json')}}", function(error, topo) {
+    d3.json("/data",function(error,locations){
+			draw_map(topo)
+
+			data = locations;
+    })
+});
+
+
+d3.select("button.map")
+	.on("click", function() {
+		draw_journey(data);
+});
+
+d3.select("button.timeline")
+	.on("click", function() {
+		draw_timeline(data);
+});
+
+</script>
+
+</body>
+</html>
