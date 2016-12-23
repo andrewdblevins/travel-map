@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Journey Maps</title>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+</head>
+<body>
+	<h1>Journey Map</h1>
+
+<script type="text/javascript">
+
+var projection = d3.geo.mercator()
+			.scale(350)
+			.center([60, 37.5]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var svg = d3.select("body").append("svg")
+    				.attr("width", 1200)
+    				.attr("height", 800);
+
+d3.json("{{url_for('static', filename='map.json')}}", function(error, topo) {
+	svg.append("path")
+			.datum(topo)
+			.attr("d", path);
+});
+</script>
+</body>
+</html>

@@ -82,39 +82,43 @@ var path = d3.geo.path()
     .projection(projection);
 
 
+var tip = d3.tip()
+	  .attr('class', 'd3-tip')
+	  .offset([-10, 0])
+	  .html(function(d) {
+		    return "<strong>Latitude:</strong> <span style='color:red'>" + d.latitude + "</span>"; })
 
 var svg = d3.select("body").append("svg")
-    				.attr("width", width)
-    				.attr("height", height);
+      				.attr("width", width)
+				.attr("height", height+100)
+				.call(tip);
 
-var tip = d3.tip()
-  .attr('class', 'd3-tip')
-  .offset([-10, 0])
-  .html(function(d) {
-    return "<strong>Frequency:</strong> <span style='color:red'>" + d.latitude + "</span>";
-  })
+var g = svg.append("g");
 
 function draw_map(topo){
-
-	svg.append("path")
+	g.append("path")
 			.datum(topo)
 			.attr("d", path);
 };
 
 function draw_journey(locations){
-	var circles = svg.selectAll("circle")
-	.data(locations).enter()
-	.append("circle")
+	var circles = g.selectAll("circle")
+		.data(locations).enter()
+		.append("circle")
+	    .on('mouseover', tip.show)
+	    .on('mouseout', tip.hide)
 
-	svg.selectAll("circle")
-	.attr("cx", function (d) {
-								return projection([d.longitude,d.latitude])[0]; })
-	.attr("cy", function (d) {
-								return projection([d.longitude,d.latitude])[1]; })
-	.attr("r", "5px")
-	.attr("fill", function(d){
-								return d.color})
-
+	g.selectAll("circle")
+		.transition()
+		.duration(2000)
+	    .delay(function(d,i){return i / locations.length * 1000;})
+		.attr("cx", function (d) {
+				return projection([d.longitude,d.latitude])[0]; })
+		.attr("cy", function (d) {
+				return projection([d.longitude,d.latitude])[1]; })
+		.attr("r", "5px")
+		.attr("fill", function(d){
+				return d.color})
 };
 
 
@@ -123,8 +127,8 @@ function draw_timeline(locations){
 	var max_time = d3.max(locations, function(d) { return d.timestampMs; });
 
 	var timeScale = d3.time.scale()
-                    .domain([min_time,max_time])
-					.range([0,width])
+									.domain([min_time,max_time])
+									.range([0,width])
 
 	var timeAxis = d3.svg.axis()
 					.scale(timeScale)
@@ -135,11 +139,13 @@ function draw_timeline(locations){
 			.attr("transform", "translate(0,20)")
 			.call(timeAxis);
 
-	var circles = svg.selectAll("circle")
-	.data(locations).enter()
-	.append("circle")
 
-	svg.selectAll("circle")
+	g.selectAll("circle")
+	.transition()
+	.duration(2000)
+    .delay(function(d,i){
+        return i / locations.length * 1000;
+    })
 	.attr("cx", function (d){
 								return timeScale(d.timestampMs); })
 	.attr("cy", function (d){return 10;})
@@ -169,6 +175,24 @@ d3.select("button.timeline")
 	.on("click", function() {
 		draw_timeline(data);
 });
+
+// zoom and pan
+var zoom = d3.behavior.zoom()
+    .on("zoom",function() {
+        g.attr("transform","translate("+ 
+            d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+        g.selectAll("circle")
+        .attr("r", function(){
+            var self = d3.select(this);
+            var r = 5 / d3.event.scale;
+            return r;
+        });
+        g.selectAll("path")  
+            .attr("d", path.projection(projection)); 
+
+  });
+
+svg.call(zoom)
 
 </script>
 
